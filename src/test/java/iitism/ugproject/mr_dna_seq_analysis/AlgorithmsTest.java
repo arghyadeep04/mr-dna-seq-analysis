@@ -26,7 +26,7 @@ public class AlgorithmsTest {
     private MockCharacterStream stream;
     private CircularString circ;
 
-    // reference unbanded Levenshtein
+    // reference Naive Levenshtein
     private static int fullEditDistance(String a, String b) {
         int n = a.length(), m = b.length();
         int[][] dp = new int[n + 1][m + 1];
