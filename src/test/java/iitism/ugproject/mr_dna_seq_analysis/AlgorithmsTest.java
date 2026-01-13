@@ -1,5 +1,6 @@
 package iitism.ugproject.mr_dna_seq_analysis;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
@@ -47,7 +48,7 @@ public class AlgorithmsTest {
         return dp[n][m];
     }
 
-    private void checkApprox(String sequence, String pattern, int k) throws Exception {
+    private void verifyWithLevenstheinDistance(String sequence, String pattern, int k) throws Exception {
 
         int m = pattern.length();
         stream = new MockCharacterStream(sequence);
@@ -90,43 +91,28 @@ public class AlgorithmsTest {
         // stream.close();
     }
 
-    @AfterEach
-    void cleanup() throws Exception {
-        if (circ != null) {
-            circ.close();
-        }
-        if (stream != null) {
-            stream.close();
-        }
-    }
+
 
     // ------------ actual tests ----------------
 
     @Test
     public void exactMatchNoErrors() throws Exception {
-        checkApprox("ATGC", "ATGC", 0);
-        // assertEquals(new boolean[]{true}, Algorithms.approximateEditDistance(
-        //         new CircularString(
-        //                 new MockCharacterStream("ATGC"),
-        //                 4,
-        //                 0),
-        //         "ATGC".toCharArray(),
-        //         0));
+        verifyWithLevenstheinDistance("ATGC", "ATGC", 0);
     }
 
     @Test
     public void singleMismatchAllowed() throws Exception {
-        checkApprox("ATGCA", "ATGC", 1);
+        verifyWithLevenstheinDistance("ATGCA", "ATGC", 1);
     }
 
     @Test
     public void insertionDeletionCases() throws Exception {
-        checkApprox("AAAATTTGGGG", "AATG", 2);
+        verifyWithLevenstheinDistance("AAAATTTGGGG", "AATG", 2);
     }
 
     @Test
     public void repetitiveDNASequenceAndPattern() throws Exception {
-        checkApprox("ATATATATATATAT", "ATATA", 1);
+        verifyWithLevenstheinDistance("ATATATATATATAT", "ATATA", 1);
     }
 
     @Test
@@ -145,7 +131,7 @@ public class AlgorithmsTest {
             for (int i = 0; i < n; i++) seq.append(alphabet.charAt(r.nextInt(4)));
             for (int i = 0; i < m; i++) pat.append(alphabet.charAt(r.nextInt(4)));
 
-            checkApprox(seq.toString(), pat.toString(), k);
+            verifyWithLevenstheinDistance(seq.toString(), pat.toString(), k);
         }
     }
 }

@@ -89,7 +89,6 @@ public class Algorithms {
                     int idxCorner = CurrIndex.apply(i - 1, j - 1);
                     if (0 <= idxCorner && idxCorner < band) {
                         int cost = (pat[i - 1] == sub.charAt(j - 1)) ? 0 : 1;
-                        System.out.println("DE "+pat[i-1]+" "+sub.charAt(j-1)+" "+cost+" "+prev[idxCorner]);
                         corner = prev[idxCorner] + cost;
                     }
 
