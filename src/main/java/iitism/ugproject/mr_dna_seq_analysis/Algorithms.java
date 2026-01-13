@@ -117,7 +117,6 @@ public class Algorithms {
             int idx = CurrIndex.apply(m, j);
             if (0 <= idx && idx < band) {
                 d[i] = (prev[idx] <= k);
-                System.out.println("DI "+i+" "+prev[idx]);
             } else {
                 d[i] = false;
             }

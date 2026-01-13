@@ -1,7 +1,5 @@
 package iitism.ugproject.mr_dna_seq_analysis;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
@@ -87,8 +85,6 @@ public class AlgorithmsTest {
 
         } while (circ.getNext());
 
-        // circ.close();
-        // stream.close();
     }
 
 
