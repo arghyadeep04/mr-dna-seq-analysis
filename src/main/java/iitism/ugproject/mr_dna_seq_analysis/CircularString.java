@@ -8,7 +8,7 @@ public class CircularString implements Closeable {
 
     // Consider providing an ExecutorService from outside in production. For tests this is fine,
     // but ensure you call close() to shutdown the pool.
-    private static final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private final char[] sub_sequence;
     private int offset;

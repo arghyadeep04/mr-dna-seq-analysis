@@ -4,7 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class CharacterStream {
+public class CharacterStream implements AutoCloseable {
     private final InputStream is;
 
     // for creating mock classes
