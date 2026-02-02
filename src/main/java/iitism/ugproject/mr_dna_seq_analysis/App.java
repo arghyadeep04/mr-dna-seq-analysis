@@ -57,29 +57,104 @@ public class App {
             long end = (id == w - 1) ? (n - 1) : ((id + 1) * chunk - 1);
             long numWindows = end - start + 1;
 
-            List<String> matches = new ArrayList<>();
-            try (CharacterStream stream = new CharacterStream(seqFilePath, start, new org.apache.hadoop.conf.Configuration())) {
-                 
-                // circularString reads patternLength + k (t) characters initially
-                try (CircularString sub = new CircularString(stream, m, localK)) {
-                    for (long i = 0; i < numWindows; i++) {
-                        // check if current window has enough characters for a match
-                        if (sub.getLength() < m - localK) break;
+            org.apache.spark.TaskContext context = org.apache.spark.TaskContext.get();
+            
+            return new java.util.Iterator<String>() {
+                private CharacterStream stream;
+                private CircularString sub;
+                private long currentWindow = 0;
+                private boolean initialized = false;
+                
+                // matches for current window
+                private boolean[] currentMatches = null;
+                private int matchIndex = 0;
+                
+                private String nextMatch = null;
+                private boolean done = false;
 
-                        boolean[] d = Algorithms.approximateEditDistance(sub, pattern, localK);
-                        for (int j = 0; j < d.length; j++) {
-                            if (d[j]) {
-                                long matchStart = start + i;
-                                long matchEnd = matchStart + (m - localK - 1) + j;
-                                matches.add(matchStart + "," + matchEnd);
-                            }
-                        }
+                private void init() {
+                    if (initialized) return;
+                    try {
+                        // create resources
+                        stream = new CharacterStream(seqFilePath, start, new org.apache.hadoop.conf.Configuration());
+                        sub = new CircularString(stream, m, localK);
                         
-                        if (!sub.getNext()) break;
+                        context.addTaskCompletionListener(ctx -> {
+                            try {
+                                if (sub != null) sub.close();
+                                if (stream != null) stream.close();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                        initialized = true;
+                    } catch (java.io.IOException e) {
+                        throw new RuntimeException(e);
                     }
                 }
-            }
-            return matches.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    if (nextMatch != null) return true;
+                    if (done) return false;
+                    
+                    if (!initialized) init();
+
+                    while (currentWindow < numWindows) {
+                        // if we have pending matches from the last processed window, return them
+                        if (currentMatches != null && matchIndex < currentMatches.length) {
+                             if (currentMatches[matchIndex]) {
+                                 long matchStart = start + currentWindow;
+                                 long matchEnd = matchStart + (m - localK - 1) + matchIndex;
+                                 nextMatch = matchStart + "," + matchEnd;
+                                 matchIndex++;
+                                 return true;
+                             }
+                             matchIndex++;
+                             continue;
+                        }
+
+                        // no more pending matches for this window, move to next window
+                        // first, check if we need to advance or if this is the first window
+                        if (currentMatches != null) { 
+                             // we just finished a window, try to advance
+                             try {
+                                 if (!sub.getNext()) {
+                                     done = true;
+                                     return false;
+                                 }
+                             } catch (java.io.IOException e) {
+                                 throw new RuntimeException(e);
+                             }
+                             currentWindow++;
+                             if (currentWindow >= numWindows) {
+                                 done = true;
+                                 return false; 
+                             }
+                        }
+                        
+                        // process current window
+                        if (sub.getLength() < m - localK) {
+                            done = true;
+                            return false;
+                        }
+
+                        currentMatches = Algorithms.approximateEditDistance(sub, pattern, localK);
+                        matchIndex = 0;
+                    }
+                    
+                    done = true;
+                    return false;
+                }
+
+                @Override
+                public String next() {
+                    if (!hasNext()) throw new java.util.NoSuchElementException();
+                    String result = nextMatch;
+                    nextMatch = null;
+                    return result;
+                }
+            };
         });
 
         results.saveAsTextFile(outDir);
