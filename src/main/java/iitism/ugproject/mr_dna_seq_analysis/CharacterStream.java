@@ -13,22 +13,18 @@ public class CharacterStream implements AutoCloseable {
     }
 
     public CharacterStream(String path, long start) throws IOException {
+        this(path, start, new org.apache.hadoop.conf.Configuration());
+    }
+
+    public CharacterStream(String path, long start, org.apache.hadoop.conf.Configuration conf) throws IOException {
         if (start < 0) throw new IllegalArgumentException("start cannot be negative");
 
-        is = new FileInputStream(path);
-
-        long skipsReqd = start;
-        while (skipsReqd > 0) {
-            long skipped = is.skip(skipsReqd);
-
-            if (skipped == 0) {
-                // try reading 1 byte to avoid infinite loop
-                if (is.read() == -1) break; // EOF
-                skipped = 1;
-            }
-
-            skipsReqd -= skipped;
-        }
+        org.apache.hadoop.fs.Path hadoopPath = new org.apache.hadoop.fs.Path(path);
+        org.apache.hadoop.fs.FileSystem fs = hadoopPath.getFileSystem(conf);
+        org.apache.hadoop.fs.FSDataInputStream fileStream = fs.open(hadoopPath);
+        
+        fileStream.seek(start);
+        this.is = fileStream;
     }
 
     public char next() throws IOException {
