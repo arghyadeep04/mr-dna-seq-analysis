@@ -157,7 +157,7 @@ public class App {
             };
         });
 
-        results.saveAsTextFile(outDir);
+        results.coalesce(1).saveAsTextFile(outDir);
         sc.stop();
         sc.close();
     }
